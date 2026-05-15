@@ -35,6 +35,22 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - name: Log pending changesets
+        run: |
+          echo "┌─────────────────────────────────────────┐"
+          echo "│           Pending changesets             │"
+          echo "└─────────────────────────────────────────┘"
+          for f in .changeset/*.md; do
+            [ "$f" = ".changeset/README.md" ] && continue
+            # extract bump type and packages from frontmatter
+            packages=$(awk '/^---$/{p++; next} p==1' "$f" | grep -v '^---')
+            summary=$(awk '/^---$/{p++; next} p==2' "$f")
+            echo ""
+            echo "📦 $packages"
+            echo "   $summary"
+          done
+          echo ""
       - run: echo "→ pnpm run version would run here"
 
   approve:
