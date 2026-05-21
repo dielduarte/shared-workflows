@@ -16,12 +16,12 @@ jobs:
           PACKAGE_NAME=$(node -e "console.log(require('./package.json').name)")
           VERSION=$(node -e "console.log(require('./package.json').version)")
           if npm view "${PACKAGE_NAME}@${VERSION}" version 2>/dev/null | grep -q "${VERSION}"; then
-            echo "result=false"
-            echo "✓ ${PACKAGE_NAME}@${VERSION} already published — skipping"
+            echo "result=false" >> $GITHUB_OUTPUT
+            echo "${PACKAGE_NAME}@${VERSION} already published - skipping"
           else
-            echo "result=true"
-            echo "→ ${PACKAGE_NAME}@${VERSION} not published yet — proceeding"
-          fi >> $GITHUB_OUTPUT
+            echo "result=true" >> $GITHUB_OUTPUT
+            echo "${PACKAGE_NAME}@${VERSION} not published yet - proceeding"
+          fi
 
   ci:
     name: CI (consumer hook)
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - run: echo "✓ Approved — proceeding to release"
+      - run: echo "Approved - proceeding to release"
 
   release:
     name: Build + publish (consumer hook)
@@ -56,4 +56,4 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - run: echo "→ Notification would be sent here"
+      - run: echo "Notification would be sent here"
