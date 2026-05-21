@@ -4,58 +4,37 @@ on:
   workflow_call:
 
 jobs:
-  check-changesets:
-    name: Check changesets
+  check-version:
+    name: Check version
     runs-on: ubuntu-latest
     outputs:
-      has_changesets: ${{ steps.check.outputs.result }}
+      should_release: ${{ steps.check.outputs.result }}
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - id: check
         run: |
-          if find .changeset -name '*.md' -not -name 'README.md' 2>/dev/null | grep -q .; then
-            echo "result=true" >> $GITHUB_OUTPUT
-            echo "✓ Changesets found — proceeding"
+          PACKAGE_NAME=$(node -e "console.log(require('./package.json').name)")
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          if npm view "${PACKAGE_NAME}@${VERSION}" version 2>/dev/null | grep -q "${VERSION}"; then
+            echo "result=false"
+            echo "✓ ${PACKAGE_NAME}@${VERSION} already published — skipping"
           else
-            echo "result=false" >> $GITHUB_OUTPUT
-            echo "No changesets — skipping release"
-          fi
+            echo "result=true"
+            echo "→ ${PACKAGE_NAME}@${VERSION} not published yet — proceeding"
+          fi >> $GITHUB_OUTPUT
 
   ci:
     name: CI (consumer hook)
-    needs: check-changesets
-    if: needs.check-changesets.outputs.has_changesets == 'true'
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - uses: ./.github/actions/ci
 
-  bump:
-    name: Bump versions
-    needs: ci
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - name: Log pending changesets
-        run: |
-          echo "┌─────────────────────────────────────────┐"
-          echo "│           Pending changesets             │"
-          echo "└─────────────────────────────────────────┘"
-          for f in .changeset/*.md; do
-            [ "$f" = ".changeset/README.md" ] && continue
-            # extract bump type and packages from frontmatter
-            packages=$(awk '/^---$/{p++; next} p==1' "$f" | grep -v '^---')
-            summary=$(awk '/^---$/{p++; next} p==2' "$f")
-            echo ""
-            echo "📦 $packages"
-            echo "   $summary"
-          done
-          echo ""
-      - run: echo "→ pnpm run version would run here"
-
   approve:
     name: Await approval
-    needs: bump
+    needs: ci
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -65,6 +44,9 @@ jobs:
     name: Build + publish (consumer hook)
     needs: approve
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - uses: ./.github/actions/release
