@@ -32,18 +32,11 @@ jobs:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - uses: ./.github/actions/ci
 
-  approve:
-    name: Await approval
+  release:
+    name: Build + publish (consumer hook)
     needs: ci
     runs-on: ubuntu-latest
     environment: production
-    steps:
-      - run: echo "Approved - proceeding to release"
-
-  release:
-    name: Build + publish (consumer hook)
-    needs: approve
-    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
