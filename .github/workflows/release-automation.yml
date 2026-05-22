@@ -23,18 +23,18 @@ jobs:
             echo "${PACKAGE_NAME}@${VERSION} not published yet - proceeding"
           fi
 
-  ci:
-    name: CI (consumer hook)
+  guards:
+    name: Guards (consumer hook)
     needs: check-version
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - uses: ./.github/actions/ci
+      - uses: ./.github/actions/guards
 
   release:
     name: Build + publish (consumer hook)
-    needs: ci
+    needs: guards
     runs-on: ubuntu-latest
     environment: production
     env:
