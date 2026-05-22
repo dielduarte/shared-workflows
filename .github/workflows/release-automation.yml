@@ -37,6 +37,8 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     environment: production
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     permissions:
       id-token: write
       contents: read
