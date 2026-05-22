@@ -22,7 +22,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin
           git checkout main
-          git merge origin/canary --ff-only
+          git merge origin/canary --no-edit
           git push origin main
 
       - name: Trigger release automation
