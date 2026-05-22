@@ -33,8 +33,9 @@ jobs:
       - uses: ./.github/actions/release
 
   notify:
-    name: Notify
+    name: Notify (consumer hook)
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Notification would be sent here"
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - uses: ./.github/actions/notify
