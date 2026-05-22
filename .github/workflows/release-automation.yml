@@ -4,39 +4,25 @@ on:
   workflow_call:
 
 jobs:
-  check-version:
-    name: Check version
-    runs-on: ubuntu-latest
-    outputs:
-      should_release: ${{ steps.check.outputs.result }}
-    steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - id: check
-        run: |
-          PACKAGE_NAME=$(node -e "console.log(require('./package.json').name)")
-          VERSION=$(node -e "console.log(require('./package.json').version)")
-          if npm view "${PACKAGE_NAME}@${VERSION}" version 2>/dev/null | grep -q "${VERSION}"; then
-            echo "result=false" >> $GITHUB_OUTPUT
-            echo "${PACKAGE_NAME}@${VERSION} already published - skipping"
-          else
-            echo "result=true" >> $GITHUB_OUTPUT
-            echo "${PACKAGE_NAME}@${VERSION} not published yet - proceeding"
-          fi
-
   guards:
     name: Guards (consumer hook)
-    needs: check-version
-    if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - uses: ./.github/actions/guards
 
-  release:
-    name: Build + publish (consumer hook)
+  build:
+    name: Build (consumer hook)
     needs: guards
     runs-on: ubuntu-latest
-    environment: production
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - uses: ./.github/actions/build
+
+  release:
+    name: Release (consumer hook)
+    needs: build
+    runs-on: ubuntu-latest
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     permissions:

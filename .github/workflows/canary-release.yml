@@ -1,0 +1,37 @@
+name: Canary Release
+
+on:
+  workflow_call:
+
+jobs:
+  check-prerelease:
+    name: Check for pre-release version
+    runs-on: ubuntu-latest
+    outputs:
+      is_prerelease: ${{ steps.check.outputs.result }}
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - id: check
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          if echo "$VERSION" | grep -q "-"; then
+            echo "result=true" >> $GITHUB_OUTPUT
+            echo "Pre-release version detected ($VERSION) - proceeding with canary release"
+          else
+            echo "result=false" >> $GITHUB_OUTPUT
+            echo "No pre-release version ($VERSION) - skipping canary release"
+          fi
+
+  release:
+    name: Release canary (consumer hook)
+    needs: check-prerelease
+    if: needs.check-prerelease.outputs.is_prerelease == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      - uses: ./.github/actions/release
