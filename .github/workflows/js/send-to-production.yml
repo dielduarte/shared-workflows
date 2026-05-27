@@ -1,0 +1,31 @@
+name: JS Send to Production
+
+on:
+  workflow_call:
+
+jobs:
+  send-to-production:
+    name: Rebase canary onto main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebase canary onto main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git checkout main
+          git merge origin/canary --no-edit
+          git push origin main
+
+      - name: Trigger release automation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release-automation.yml --ref main
